@@ -1,0 +1,14 @@
+{
+  "id": "widget-chat",
+  "name": "Chat",
+  "type": "widget",
+  "category": "chat",
+  "description": "Interface de chat avec prompt integre pour interagir avec l'agent",
+  "icon": "message-circle",
+  "hasUI": true,
+  "ports": {
+    "inputs": [{ "id": "message", "label": "Message agent", "type": "text" }],
+    "outputs": [{ "id": "prompt", "label": "Message user", "type": "text" }]
+  },
+  "methods": ["message", "get_messages"]
+}
