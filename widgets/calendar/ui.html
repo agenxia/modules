@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calendrier</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0a0a; color: #e5e5e5;
+    padding: 16px; min-height: 100vh;
+  }
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; padding: 0 4px;
+  }
+  .header h2 { font-size: 16px; font-weight: 600; min-width: 180px; text-align: center; }
+  .header button {
+    background: #1a1a1a; border: 1px solid #2a2a2a; color: #e5e5e5;
+    border-radius: 8px; width: 32px; height: 32px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    transition: background 0.15s;
+  }
+  .header button:hover { background: #2a2a2a; }
+  .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 16px; }
+  .day-label {
+    text-align: center; font-size: 11px; font-weight: 500;
+    color: #666; padding: 4px 0; text-transform: uppercase;
+  }
+  .day {
+    aspect-ratio: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
+    border-radius: 8px; font-size: 13px; cursor: pointer;
+    transition: background 0.15s; position: relative;
+  }
+  .day:hover { background: #1a1a1a; }
+  .day.other { color: #444; }
+  .day.today { background: #1a1a2e; color: #818cf8; font-weight: 600; }
+  .day.selected { background: #2a2a4a; }
+  .dots { display: flex; gap: 2px; }
+  .dot { width: 4px; height: 4px; border-radius: 50%; background: #818cf8; }
+  .dot:nth-child(2) { background: #34d399; }
+  .dot:nth-child(3) { background: #f59e0b; }
+  .events-section { border-top: 1px solid #1a1a1a; padding-top: 12px; }
+  .events-section h3 { font-size: 13px; color: #888; margin-bottom: 8px; font-weight: 500; }
+  .event-item {
+    display: flex; gap: 10px; padding: 8px 10px;
+    border-radius: 8px; margin-bottom: 4px; background: #111;
+    border: 1px solid #1a1a1a; transition: background 0.15s;
+  }
+  .event-item:hover { background: #1a1a1a; }
+  .event-time { font-size: 12px; color: #818cf8; min-width: 48px; font-weight: 500; }
+  .event-info { flex: 1; }
+  .event-title { font-size: 13px; font-weight: 500; }
+  .event-loc { font-size: 11px; color: #666; margin-top: 2px; }
+  .empty { text-align: center; color: #444; font-size: 13px; padding: 24px 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <button id="prev">&larr;</button>
+  <h2 id="month-title"></h2>
+  <button id="next">&rarr;</button>
+</div>
+<div class="grid" id="grid"></div>
+<div class="events-section">
+  <h3 id="events-title">Evenements</h3>
+  <div id="events-list"></div>
+</div>
+
+<script>
+const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+const MONTHS = ['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre'];
+
+let currentDate = new Date();
+let selectedDate = null;
+let allEvents = [];
+
+function init() {
+  document.getElementById('prev').onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); render(); };
+  document.getElementById('next').onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); render(); };
+  window.addEventListener('message', (e) => {
+    if (e.data?.type === 'events') { allEvents = e.data.events || []; render(); }
+  });
+  window.parent?.postMessage({ type: 'ready', widget: 'calendar' }, '*');
+  render();
+}
+
+function render() {
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  document.getElementById('month-title').textContent = `${MONTHS[month]} ${year}`;
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = DAYS.map(d => `<div class="day-label">${d}</div>`).join('');
+
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  let startDay = first.getDay() === 0 ? 6 : first.getDay() - 1;
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  for (let i = startDay - 1; i >= 0; i--) {
+    const d = new Date(year, month, -i);
+    grid.innerHTML += dayCell(d, true, todayStr);
+  }
+  for (let d = 1; d <= last.getDate(); d++) {
+    const date = new Date(year, month, d);
+    grid.innerHTML += dayCell(date, false, todayStr);
+  }
+  const remaining = 7 - ((startDay + last.getDate()) % 7);
+  if (remaining < 7) {
+    for (let d = 1; d <= remaining; d++) {
+      const date = new Date(year, month + 1, d);
+      grid.innerHTML += dayCell(date, true, todayStr);
+    }
+  }
+
+  grid.querySelectorAll('.day').forEach(el => {
+    el.onclick = () => { selectedDate = el.dataset.date; render(); };
+  });
+
+  renderEvents();
+}
+
+function dayCell(date, other, todayStr) {
+  const ds = dateStr(date);
+  const evts = eventsForDate(ds);
+  const isToday = ds === todayStr;
+  const isSel = ds === selectedDate;
+  const cls = ['day', other && 'other', isToday && 'today', isSel && 'selected'].filter(Boolean).join(' ');
+  const dots = evts.length ? `<div class="dots">${evts.slice(0,3).map(() => '<div class="dot"></div>').join('')}</div>` : '';
+  return `<div class="${cls}" data-date="${ds}">${date.getDate()}${dots}</div>`;
+}
+
+function dateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function eventsForDate(ds) {
+  return allEvents.filter(e => e.start && e.start.startsWith(ds));
+}
+
+function renderEvents() {
+  const list = document.getElementById('events-list');
+  const title = document.getElementById('events-title');
+  const ds = selectedDate || dateStr(new Date());
+  const evts = eventsForDate(ds);
+  title.textContent = selectedDate ? `Evenements du ${selectedDate}` : "Evenements d'aujourd'hui";
+  if (!evts.length) { list.innerHTML = '<div class="empty">Aucun evenement</div>'; return; }
+  list.innerHTML = evts.map(e => {
+    const time = e.start?.includes('T') ? e.start.slice(11,16) : '';
+    return `<div class="event-item">
+      <div class="event-time">${time}</div>
+      <div class="event-info">
+        <div class="event-title">${esc(e.summary)}</div>
+        ${e.location ? `<div class="event-loc">${esc(e.location)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+init();
+</script>
+</body>
+</html>
