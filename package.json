@@ -1,0 +1,12 @@
+{
+  "name": "@agenxia/modules",
+  "version": "1.0.0",
+  "description": "Reusable modules for agenxia agents",
+  "type": "module",
+  "exports": {
+    "./connectors/ics": "./connectors/ics/index.js",
+    "./widgets/calendar": "./widgets/calendar/index.js",
+    "./widgets/chat": "./widgets/chat/index.js",
+    "./registry": "./registry.json"
+  }
+}
