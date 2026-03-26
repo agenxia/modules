@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "modules": [
+    { "path": "connectors/ics", "manifest": "connectors/ics/manifest.json" },
+    { "path": "widgets/calendar", "manifest": "widgets/calendar/manifest.json" },
+    { "path": "widgets/chat", "manifest": "widgets/chat/manifest.json" }
+  ]
+}
