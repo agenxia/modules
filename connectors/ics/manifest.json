@@ -1,0 +1,16 @@
+{
+  "id": "connector-ics",
+  "name": "Connecteur ICS",
+  "type": "connector",
+  "category": "calendar",
+  "description": "S'abonne a un fichier ICS et extrait les evenements du calendrier",
+  "icon": "calendar",
+  "ports": {
+    "inputs": [{ "id": "config", "label": "Configuration", "type": "json" }],
+    "outputs": [{ "id": "events", "label": "Evenements", "type": "json" }]
+  },
+  "config": {
+    "ics_url": { "type": "string", "label": "URL du fichier ICS", "required": true }
+  },
+  "methods": ["subscribe", "events"]
+}
