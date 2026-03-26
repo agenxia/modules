@@ -1,0 +1,14 @@
+{
+  "id": "widget-calendar",
+  "name": "Calendrier",
+  "type": "widget",
+  "category": "calendar",
+  "description": "Affiche un calendrier interactif avec les evenements de l'agent",
+  "icon": "calendar-days",
+  "hasUI": true,
+  "ports": {
+    "inputs": [{ "id": "events", "label": "Evenements", "type": "json" }],
+    "outputs": [{ "id": "selection", "label": "Selection", "type": "json" }]
+  },
+  "methods": ["render", "get_events"]
+}
